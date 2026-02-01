@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Recipe & Topping Scaler</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; max-width: 950px; margin: auto; color: #333; line-height: 1.6; background-color: #fcfcfc; }
+        
+        .header-section { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; gap: 30px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .controls { flex: 1; }
+        
+        .chart-wrapper { position: relative; width: 300px; height: 300px; flex-shrink: 0; }
+        .chart-center-text { position: absolute; top: 52%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
+        .chart-center-text .val { font-size: 28px; font-weight: bold; display: block; color: #2c3e50; }
+        .chart-center-text .unit { font-size: 14px; color: #7f8c8d; }
+
+        h1 { margin-top: 0; color: #2c3e50; }
+        .instruction-text { color: #555; font-size: 0.95em; margin-bottom: 20px; }
+        input[type="range"] { width: 100%; max-width: 350px; cursor: pointer; margin: 10px 0; }
+        
+        table { width: 100%; border-collapse: collapse; margin: 30px 0; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        th, td { border: 1px solid #eee; padding: 15px; text-align: center; }
+        th { background-color: #f8f9fa; font-weight: 600; color: #666; }
+        .total-row { background-color: #f1f1f1; font-weight: bold; }
+
+        .topping-section { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .topping-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 20px; }
+        .topping-card { border: 2px solid #f0f0f0; padding: 20px; border-radius: 10px; cursor: pointer; transition: 0.3s; display: flex; align-items: flex-start; }
+        .topping-card:hover { border-color: #3498db; background: #f7fbff; }
+        .topping-card input { margin-top: 5px; margin-right: 15px; transform: scale(1.3); }
+        
+        .topping-info { flex: 1; }
+        .topping-title { font-weight: bold; font-size: 1.1em; display: block; margin-bottom: 5px; color: #2980b9; }
+        .topping-ingredients { font-size: 0.9em; color: #444; margin-bottom: 8px; }
+        .topping-stats { font-weight: 600; color: #27ae60; font-size: 0.9em; }
+        .topping-why { font-style: italic; font-size: 0.85em; color: #7f8c8d; margin-top: 8px; border-top: 1px solid #eee; pt: 8px; }
+    </style>
+</head>
+<body>
+
+    <div class="header-section">
+        <div class="controls">
+            <h1>Power Porridge</h1>
+            <p class="instruction-text">
+                To keep this within your <strong>500–600 calorie window</strong>, adjust the slider below to set your base porridge size. 
+                You have about 100 calories remaining for toppings to maximize fibre and micronutrient density.
+            </p>
+            
+            <label for="cal-slider"><strong>Base Porridge Calories:</strong></label><br>
+            <input type="range" id="cal-slider" min="200" max="800" step="10" value="500">
+            <div style="font-weight: bold;"><span id="base-val-display">500</span> kcal (Base)</div>
+        </div>
+
+        <div class="chart-wrapper">
+            <canvas id="macroChart"></canvas>
+            <div class="chart-center-text">
+                <span class="val" id="center-cal">500</span>
+                <span class="unit">Total kcal</span>
+            </div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Ingredient</th>
+                <th>Amount</th>
+                <th>Calories</th>
+                <th>Protein</th>
+                <th>Carbs</th>
+                <th>Fats</th>
+                <th>Fiber</th>
+            </tr>
+        </thead>
+        <tbody id="recipe-body"></tbody>
+        <tfoot id="recipe-totals" class="total-row"></tfoot>
+    </table>
+
+    <div class="topping-section">
+        <h3>Topping Ideas</h3>
+        <p>Since your base porridge is already high in protein, these toppings focus on rounding out your breakfast with fibre.</p>
+
+        <div class="topping-grid">
+            <label class="topping-card">
+                <input type="radio" name="topping" value="none" checked>
+                <div class="topping-info">
+                    <span class="topping-title">No Topping</span>
+                    <div class="topping-ingredients">Just the base recipe.</div>
+                </div>
+            </label>
+
+            <label class="topping-card">
+                <input type="radio" name="topping" value="fibre">
+                <div class="topping-info">
+                    <span class="topping-title">1. The "Fibre Bomb" (Berries & Chia)</span>
+                    <div class="topping-ingredients">80g Raspberries/Blackberries + 1 tsp (5g) Chia Seeds</div>
+                    <div class="topping-stats">Added: 65 kcal | 7g Fibre</div>
+                    <div class="topping-why"><strong>Why:</strong> Raspberries are among the highest-fibre fruits. Chia seeds absorb water, making the porridge more filling.</div>
+                </div>
+            </label>
+
+            <label class="topping-card">
+                <input type="radio" name="topping" value="crunch">
+                <div class="topping-info">
+                    <span class="topping-title">2. The "Crunch & Potassium" (Cacao & Banana)</span>
+                    <div class="topping-ingredients">1/2 Medium Banana (sliced) + 1 tbsp Cacao Nibs</div>
+                    <div class="topping-stats">Added: 100 kcal | 3.5g Fibre</div>
+                    <div class="topping-why"><strong>Why:</strong> Cacao nibs are pure chocolate beans—no added sugar and high in magnesium. Banana provides natural sweetness.</div>
+                </div>
+            </label>
+
+            <label class="topping-card">
+                <input type="radio" name="topping" value="texture">
+                <div class="topping-info">
+                    <span class="topping-title">3. The "Texture Specialist" (Flax & Apple)</span>
+                    <div class="topping-ingredients">1/2 Small Apple (chopped) + 1 tbsp Ground Flaxseed</div>
+                    <div class="topping-stats">Added: 80 kcal | 5.5g Fibre</div>
+                    <div class="topping-why"><strong>Why:</strong> Apples contain pectin (prebiotic fibre), and ground flaxseeds are excellent for "smooth" digestion.</div>
+                </div>
+            </label>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const baseCals = 500;
+    const recipe = [
+        { name: "Oats", unit: "g", amt: 45, cal: 170, p: 6, c: 30, f: 3, fib: 5 },
+        { name: "Semi-Skimmed Milk", unit: "mL", amt: 120, cal: 60, p: 4, c: 6, f: 2, fib: 0 },
+        { name: "Peanut Butter", unit: "g", amt: 15, cal: 90, p: 4, c: 3, f: 8, fib: 1 },
+        { name: "Pure Whey Powder", unit: "g", amt: 45, cal: 180, p: 36, c: 3, f: 2, fib: 0 }
+    ];
+
+    const toppingData = {
+        none:    { cal: 0, p: 0, c: 0, f: 0 },
+        fibre:   { cal: 65, p: 2, c: 11, f: 2 },
+        crunch:  { cal: 100, p: 2, c: 16, f: 5 },
+        texture: { cal: 80, p: 1.5, c: 12, f: 3 }
+    };
+
+    const ctx = document.getElementById('macroChart').getContext('2d');
+    let macroChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Protein', 'Carbs', 'Fats'],
+            datasets: [{
+                data: [33, 33, 33],
+                backgroundColor: ['#2196F3', '#FFEB3B', '#F44336'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            cutout: '70%',
+            plugins: {
+                legend: { position: 'bottom' },
+                tooltip: {
+                    callbacks: {
+                        label: function(c) {
+                            const total = c.dataset.data.reduce((a, b) => a + b, 0);
+                            return `${c.label}: ${((c.parsed / total) * 100).toFixed(1)}%`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    function update() {
+        const baseTarget = Number(document.getElementById('cal-slider').value);
+        const ratio = baseTarget / baseCals;
+        const selected = document.querySelector('input[name="topping"]:checked').value;
+        const top = toppingData[selected];
+        
+        document.getElementById('base-val-display').innerText = baseTarget;
+
+        let rows = "";
+        let totals = { cal: 0, p: 0, c: 0, f: 0, fib: 0 };
+
+        recipe.forEach(item => {
+            const c = Math.round(item.cal * ratio);
+            const p = Number((item.p * ratio).toFixed(1));
+            const carb = Number((item.c * ratio).toFixed(1));
+            const f = Number((item.f * ratio).toFixed(1));
+            const fib = Number((item.fib * ratio).toFixed(1));
+
+            rows += `<tr><td>${item.name}</td><td>${(item.amt * ratio).toFixed(0)}${item.unit}</td><td>${c}</td><td>${p}g</td><td>${carb}g</td><td>${f}g</td><td>${fib}g</td></tr>`;
+            totals.cal += c; totals.p += p; totals.c += carb; totals.f += f; totals.fib += fib;
+        });
+
+        document.getElementById('recipe-body').innerHTML = rows;
+        document.getElementById('recipe-totals').innerHTML = `<td>TOTALS</td><td>-</td><td>${totals.cal}</td><td>${totals.p.toFixed(1)}g</td><td>${totals.c.toFixed(1)}g</td><td>${totals.f.toFixed(1)}g</td><td>${totals.fib.toFixed(1)}g</td>`;
+        
+        document.getElementById('center-cal').innerText = totals.cal + top.cal;
+
+        // Update Chart (Caloric Weighting)
+        macroChart.data.datasets[0].data = [(totals.p + top.p) * 4, (totals.c + top.c) * 4, (totals.f + top.f) * 9];
+        macroChart.update();
+    }
+
+    document.getElementById('cal-slider').addEventListener('input', update);
+    document.querySelectorAll('input[name="topping"]').forEach(r => r.addEventListener('change', update));
+    
+    update();
+});
+</script>
+</body>
+</html>
